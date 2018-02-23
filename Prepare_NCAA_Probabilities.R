@@ -55,6 +55,7 @@ require(tidyverse)
     colnames(elo_matrix_2017)[length(colnames(elo_matrix_2017))] <- team
   }
   
+  rm(team)
   rm(elo_2017)
   
 ##########
