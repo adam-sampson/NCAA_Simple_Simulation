@@ -33,6 +33,8 @@ predict_champion <- function(matches.dt, prob.mat.dt) {
     # of the columns as we go, we increment n by 1 and only go through
     # length/2 columns
     for(n in 1:(length(dt)/2)) {
+      # If random number is less than the probability in the probability matrix where 
+      # team row contains name of team 2, column name contains name of team 2]
       if(runif(n=1,min=0,max=1) < prob.mat.dt[prob.mat.dt$team == dt[,2][[1]],get(dt[,1][[1]])]){
         # Team 1 wins, so remove column for team 2
         colname <- names(dt)[n+1]
