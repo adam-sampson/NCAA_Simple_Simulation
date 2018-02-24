@@ -28,10 +28,9 @@ predict_champion <- function(matches.dt, prob.mat.dt) {
   
   # While there are 2 or more teams in dt, caculate the results of the next round
   while (length(dt)>1) {
-    
     # For each pair in the table of matches, predict the winner of the pair
     # and then remove the loser from the table. Since we are deleting half
-    # of the rows as we go, we increment n by 1 and only go through
+    # of the columns as we go, we increment n by 1 and only go through
     # length/2 columns
     for(n in 1:(length(dt)/2)) {
       if(runif(n=1,min=0,max=1) < prob.mat.dt[prob.mat.dt$team == dt[,2][[1]],get(dt[,1][[1]])]){
