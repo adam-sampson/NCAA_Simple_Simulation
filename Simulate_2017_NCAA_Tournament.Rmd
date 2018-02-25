@@ -1,6 +1,8 @@
 ---
 title: "Predicting 2017 NCAA Champion using Monte Carlo Simulation"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 This simulation is intended to take the seed of a tournament and the pairwise probabilties of the teams playing, and simulate the tournament several thousand times to get the probability of each team becoming champion. 
@@ -168,7 +170,7 @@ Getting one guess of who might be the winning team is pretty useless for predict
 
 To start, run the simulation 1000 times to review the output.
 
-```{r message=FALSE, warning=FALSE, error=FALSE}
+```{r message=FALSE, warning=FALSE, error=FALSE, results='hide'}
 # Create a data.table to hold the number of times a team has won
 tourn_results <- data.table(winner = character())
 times_to_simulate <- 1000
@@ -191,27 +193,58 @@ for(n in 1:times_to_simulate) {
 }
 
 close(pb)
-print(paste("Simulated",n,"rounds in",Sys.time()-start_time,attributes(Sys.time() - start_time)$units))
-
-rm(n,start_time,pb)
-
 ```
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+print(paste("Simulated",n,"rounds in",Sys.time()-start_time,attributes(Sys.time() - start_time)$units))
+rm(n,start_time,pb)
+```
+
 
 The simulation returned a table that listed the winning team for each run of the simulation. This is difficult to graph. Instead it is easier to graph a cumulative sum or a percentage. 
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}
+tourn_results[,simulation := .I]
+
 # Cumulatively sum the number of wins each team has
 for(team in unique(tourn_results$winner)) {
   tourn_results[winner == team,cum_wins := .I]
 }
 
 # Calculate the percentage they have won from the start of the simulation
-tourn_results[,pct_wins := (cum_wins/.I)]
+tourn_results[,cum_pct_wins := (cum_wins/.I)]
 ```
 
 Graphing the data gives us a visual representation that can be used to estimate whether the model appears to have reached steady state or not.
 
-```{r message=FALSE, warning=FALSE, error=FALSE}
+```{r message=FALSE, warning=FALSE, error=FALSE, fig.width=9, fig.height=4}
 ggplot(data = tourn_results) +
-  geom_area()
+  geom_area(aes(x=simulation,y=cum_pct_wins,color=winner,fill=winner),alpha=0.3)
+```
+
+It appears that the simulation has mostly flattened out after approximately 300 iterations. The next step is to calculate the final percentage of times a team won the entire tournament in 1000 simulations. 
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+pct_wins <- data.table(team = character(), pct_wins = numeric())
+for(team in unique(tourn_results$winner)) {
+  pct_wins <- rbindlist(list(pct_wins,
+                             data.table(team = as.character(team),
+                                        pct_wins = last(tourn_results[winner == team,]$cum_wins) / 
+                                                          length(tourn_results$winner)
+                                        )
+                             )
+                        )
+}
+pct_wins <- pct_wins %>% arrange(desc(pct_wins))
+team_names <- as.data.table(team_names)
+
+lookup_team_name <- function(TeamList) {
+  out <- NULL
+  for(team in TeamList) {
+    out <- c(out,team_names[TeamID == team,]$TeamName)
+  }
+  return(out)
+}
+
+pct_wins %>% transmute(TeamID = team, TeamName = lookup_team_name(team), pct_wins = paste0(pct_wins*100,"%"))
 ```
