@@ -1,0 +1,217 @@
+---
+title: "Predicting 2017 NCAA Champion using Monte Carlo Simulation"
+output: html_notebook
+---
+
+This simulation is intended to take the seed of a tournament and the pairwise probabilties of the teams playing, and simulate the tournament several thousand times to get the probability of each team becoming champion. 
+
+Note that one of the inputs to this simulation is the pairwise probabilities of every team against every other team. This simulation is NOT intended to calculate those probabilities. It is only intended to use them to predict the likely winners of the tournament. 
+
+# R Libraries
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+# List of packages to load:
+packages <- c('readr', 'stringr', 'tidyverse', 'data.table','ggplot2')
+
+# Check to see whether any packages aren't installed on the computer and install
+new_packages <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+  
+# Load Neccessary Packages
+sapply(packages, require, character.only = TRUE)
+rm(new_packages)
+```
+
+
+# Importing Data
+
+Data is from the Kaggle Competition directly, or from user submitted Kernels which have output the predicted pairwise probabilities.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+# Load the user generated probabilities from a Kernel
+# elo_probs <- read_csv(url("https://www.kaggleusercontent.com/kf/2593684/eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..jyN3-8es9ElgAMnGGr7ihQ.bG1HDZ36ahe4kJkt4GqX8-kCG8bm-OHWELhVzFalry3dQ56kSQtmoJcoYW4zPO18aJDFGQEUW9HqXwx14fvRHu79sy34Ek3vThY_wAsO7EdKsmAdOTlf_SpvU7Ahf5Lu1RcSpRy6Xb--MpzKIdFwkw.k2n5KyKDj2BI9T6HevzNJA/EloBenchmark.csv"))
+pairwise_probs <- read_csv("DataFiles/EloBenchmark.csv")
+
+# Tournament seed was downloaded from the kaggle competition site
+tourn_seed <- read_csv("DataFiles/NCAATourneySeeds.csv")
+
+# Team ID to team names were downloaded from the kaggle competition site
+team_names <- read_csv("DataFiles/Teams.csv")
+```
+
+# Reorganizing Data for Simulation
+
+The data isn't provided in an easy to use lookup table, so in preparation for the simulation it is time to massage the data into the correct format. 
+
+Also, each simulation run will be fore a single year. For this report the year **2017** will be chosen.
+
+It might be useful to create a shiny app later, so functions are being used to parse the data and run the simulation instead of running the code without functions.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+#---
+# Select a Tournament Year
+#---
+tourn_year <- '2017'
+
+#---
+# Function that takes the output from the 2018 NCAA Kaggle Competition
+# and generates a probability matrix for a specific year
+#---
+generate_prob.mat <- function(prob_table,year_in) {
+  prob_table <- prob_table %>%
+    separate(ID,c("year","team1","team2"))
+  
+  prob_year <- subset(prob_table,year == year_in)
+  
+  prob_year <- 
+    tibble(team1 = prob_year$team1, 
+           team2 = prob_year$team2,
+           pred = prob_year$Pred) %>% 
+    rbind(tibble(team1 = prob_year$team2, 
+                 team2 = prob_year$team1,
+                 pred = 1 - prob_year$Pred))
+  
+  # Each team combination should only appear once. 
+  if(sum(duplicated(prob_year)) > 0) warning("Duplicate team pairs found")
+  
+  # Set up the left column to have each team to compare to
+  prob_matrix_year <- tibble(team = unique(prob_year$team1))
+  
+  # Create a column for each team and join predictions
+  for(team in unique(prob_year$team1)) {
+    prob_matrix_year <- prob_matrix_year %>%
+      full_join(select(subset(prob_year,team1 == team),-team1), 
+                by = c("team" = "team2"))
+    # The most recent column needs to be renamed
+    colnames(prob_matrix_year)[length(colnames(prob_matrix_year))] <- team
+  }
+  
+  return(prob_matrix_year)
+}
+
+#---
+# Function that takes NCAATrouneySeeds and outputs in format needed
+#---
+parse_tourney_seeds <- function(in_seeds, year_in) {
+  out_bracket <- in_seeds %>% 
+    filter(Season == year_in) %>%
+    select(TeamID)
+  return(out_bracket)
+}
+
+#---
+# Convert data
+#---
+bracket <- parse_tourney_seeds(tourn_seed,tourn_year)
+prob.mat <- generate_prob.mat(pairwise_probs, tourn_year)
+```
+
+# Create Functions to Predict Tournament Outcome
+
+The next step in the simulation is to create a function that will predict the outcome of the tournament based on the pairwise probabilities of each match and random chance.
+
+The following function runs through the tournament one time. It uses a random number generator to generate value between 0 and 1. If that number is below the probability of team 1 winning, then team 1 wins and team 2 is removed from the list of teams, otherwise team 1 is removed from the list of teams. Then the code moves to team 3 and team 4, etc, etc.
+
+Once the first round is calculated, the loop is started over until there is only 1 team left in bracket...the winner.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+#---
+# Begin predict_champion(matches.dt,prob.mat.dt) function.
+# matches.dt is a file of team IDs organized such that
+#   matches.dt[1] plays the first game against matches.dt[2]
+#   and the winner of {1,2} plays against {3,4} and so on.
+#
+# Example bracket: matches <- data.table(teams = c('1112','1116','1124','1137'))
+#---
+
+predict_champion <- function(matches.dt, prob.mat.dt) {
+  # Make a copy of the input of matches and coerce it to a data.table
+  # Also, make each column a team name in the tournament for easy and
+  # memory efficient deletion using the data.table methods
+  dt <- as.data.table(transpose(matches.dt))
+  names(dt) <- as.character(matches.dt[[1]])
+  
+  # Make a copy of prob.mat and coerce to data.table for consistency
+  prob.mat.dt <- as.data.table(prob.mat.dt)
+  
+  
+  # While there are 2 or more teams in dt, caculate the results of the next round
+  while (length(dt)>1) {
+    # For each pair in the table of matches, predict the winner of the pair
+    # and then remove the loser from the table. Since we are deleting half
+    # of the columns as we go, we increment n by 1 and only go through
+    # length/2 columns
+    for(n in 1:(length(dt)/2)) {
+      # If random number is less than the probability in the probability matrix where 
+      # team row contains name of team 2, column name contains name of team 2]
+      if(runif(n=1,min=0,max=1) < prob.mat.dt[prob.mat.dt$team == dt[,2][[1]],get(as.character(dt[,1][[1]]))]){
+        # Team 1 wins, so remove column for team 2
+        colname <- names(dt)[n+1]
+        dt[,(colname) := NULL]
+      } else {
+        # Team 2 Wins, so remove column for team 1
+        colname <- names(dt)[n]
+        dt[,(colname) := NULL]
+      }
+    }
+    rm(n,colname) 
+  }
+  
+  # Return the result
+  return(dt[[1]])
+}
+```
+
+# Simulate the Tournament Many Times
+
+Getting one guess of who might be the winning team is pretty useless for predicting who will actually win the tournament. Next, it is necessary to run the simulation many times in order to get a distribution of teams that will win the championship, and their relative likelihood of winning compared to other teams.
+
+To start, run the simulation 1000 times to review the output.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+# Create a data.table to hold the number of times a team has won
+tourn_results <- data.table(winner = character())
+times_to_simulate <- 1000
+
+# Make the results repeatable by setting the seed
+set.seed(42)
+
+start_time <- Sys.time()
+pb <- txtProgressBar(min=0,max=times_to_simulate,style=3)
+
+for(n in 1:times_to_simulate) {
+  # tourn_results[TeamID == predict_champion(bracket,prob.mat),
+  #               ':='(wins=wins+1)]
+  tourn_results <- rbindlist(list(tourn_results,
+                                  data.table(winner = predict_champion(bracket,prob.mat))
+                                  )
+                             )
+  
+  setTxtProgressBar(pb,n)
+}
+
+close(pb)
+print(paste("Simulated",n,"rounds in",Sys.time()-start_time,attributes(Sys.time() - start_time)$units))
+
+rm(n,start_time,pb)
+
+```
+
+The simulation returned a table that listed the winning team for each run of the simulation. This is difficult to graph. Instead it is easier to graph a cumulative sum or a percentage. 
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+# Cumulatively sum the number of wins each team has
+for(team in unique(tourn_results$winner)) {
+  tourn_results[winner == team,cum_wins := .I]
+}
+
+# Calculate the percentage they have won from the start of the simulation
+tourn_results[,pct_wins := (cum_wins/.I)]
+```
+
+Graphing the data gives us a visual representation that can be used to estimate whether the model appears to have reached steady state or not.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+ggplot(data = tourn_results) +
+  geom_area()
+```

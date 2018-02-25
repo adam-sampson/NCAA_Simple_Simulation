@@ -21,6 +21,7 @@ predict_champion <- function(matches.dt, prob.mat.dt) {
   # Also, make each column a team name in the tournament for easy and
   # memory efficient deletion using the data.table methods
   dt <- as.data.table(transpose(matches.dt))
+  names(dt) <- matches.dt[[1]]
   
   # Make a copy of prob.mat and coerce to data.table for consistency
   prob.mat.dt <- as.data.table(prob.mat.dt)
@@ -35,7 +36,7 @@ predict_champion <- function(matches.dt, prob.mat.dt) {
     for(n in 1:(length(dt)/2)) {
       # If random number is less than the probability in the probability matrix where 
       # team row contains name of team 2, column name contains name of team 2]
-      if(runif(n=1,min=0,max=1) < prob.mat.dt[prob.mat.dt$team == dt[,2][[1]],get(dt[,1][[1]])]){
+      if(runif(n=1,min=0,max=1) < prob.mat.dt[prob.mat.dt$team == dt[,2][[1]],get(as.character(dt[,1][[1]]))]){
         # Team 1 wins, so remove column for team 2
         colname <- names(dt)[n+1]
         dt[,(colname) := NULL]
