@@ -6,7 +6,7 @@ library(data.table)
 
     load(file =  "sub.Rdata",  envir = environment())
     # sub <- data.table(id = sub$ID, pred = sub$Pred)
-    # save(sub, file = "sub.Rdata")
+    save(sub, file = "sub.Rdata")
     # N = 100
     # year = 2017
     # upset_bias = 0
