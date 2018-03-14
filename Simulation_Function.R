@@ -1,12 +1,12 @@
 
-
+library(data.table)
 
 
 ################## TEST PARAMETERS #####################################
 
     load(file =  "sub.Rdata",  envir = environment())
-    #sub <- data.table(id = sub$ID, pred = sub$Pred)
-    #save(sub, file = "sub.Rdata")
+    # sub <- data.table(id = sub$ID, pred = sub$Pred)
+    # save(sub, file = "sub.Rdata")
     # N = 100
     # year = 2017
     # upset_bias = 0
@@ -167,8 +167,9 @@ Create_Bracket <- function(sim){
    
 
 
-Show_Bracket <- function(bracket, add_seed=TRUE, add_prob=TRUE){
-  
+Show_Bracket <- function(bracket, add_seed =TRUE , add_prob = TRUE){
+    # add_seed =TRUE ; add_prob = TRUE
+ 
   load(file =  "seed_positions.Rdata",  envir = environment())
   load(file =  "slot_positions.Rdata",  envir = environment())
   load(file =  "NCAATourneySeeds.Rdata",  envir = environment())
@@ -185,7 +186,7 @@ Show_Bracket <- function(bracket, add_seed=TRUE, add_prob=TRUE){
   tourney_seeds <- tourney_seeds[season == year,]
   
   #Add team names
-  data.table::setnames(teams, 'team_id', 'team')
+  data.table::setnames(teams, 'teamid', 'team')
   data.table::setnames(bracket, 'winner', 'team')
   bracket_seeds <- merge(tourney_seeds, teams, by='team', all.x=TRUE)
   bracket <- merge(bracket, teams, by='team', all.x=TRUE)
@@ -195,8 +196,8 @@ Show_Bracket <- function(bracket, add_seed=TRUE, add_prob=TRUE){
     bracket_seeds[,seed_int := as.integer(substr(seed, 2, 3))]
     bracket <- merge(bracket, bracket_seeds[,list(team, seed_int)], by='team')
     
-    bracket_seeds[,team_name := paste0(team_name, '-(', seed_int, ')')]
-    bracket[,team_name := paste0(team_name, '-(', seed_int, ')')]
+    bracket_seeds[,team_name := paste0(teamname, '-(', seed_int, ')')]
+    bracket[,team_name := paste0(teamname, '-(', seed_int, ')')]
   }
   
   #Add probs
@@ -252,7 +253,7 @@ Show_Bracket <- function(bracket, add_seed=TRUE, add_prob=TRUE){
 #   Run the simulation                                                      ####
 
 
-sim <- simulation( sub, N = 1000, year = 2017,  upset_bias = 0 )
+sim <- simulation( sub, N = 1000, year = 2018,  upset_bias = 0 )
 bracket <- Create_Bracket(sim)
 Show_Bracket(bracket)
 
