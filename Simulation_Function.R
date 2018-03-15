@@ -6,7 +6,7 @@ library(data.table)
 
     load(file =  "sub.Rdata",  envir = environment())
     # sub <- data.table(id = sub$ID, pred = sub$Pred)
-    save(sub, file = "sub.Rdata")
+    #save(sub, file = "sub.Rdata")
     # N = 100
     # year = 2017
     # upset_bias = 0
@@ -23,7 +23,7 @@ library(data.table)
     sub <- sub[,-1]
 #   ____________________________________________________________________________
 #   Function to run simulation                                              ####
-    simulation <- function (probs, N = 1000, year = 2017,  upset_bias = 0) 
+    simulation <- function (probs, N = 1000, year = 2018,  upset_bias = 0) 
     {
         
     load(file =  "all_slots.Rdata",  envir = environment())
@@ -253,7 +253,7 @@ Show_Bracket <- function(bracket, add_seed =TRUE , add_prob = TRUE){
 #   Run the simulation                                                      ####
 
 
-sim <- simulation( sub, N = 1000, year = 2018,  upset_bias = 0 )
+sim <- simulation( probs = sub, N = 10000, year = 2018,  upset_bias = 0 )
 bracket <- Create_Bracket(sim)
 Show_Bracket(bracket)
 
