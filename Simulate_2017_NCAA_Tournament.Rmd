@@ -8,9 +8,9 @@ output:
     code_folding: hide
 ---
 
-This simulation is intended to take the seed of a tournament and the pairwise probabilties of the teams playing, and simulate the tournament several thousand times to get the probability of each team becoming champion. 
+This simulation is intended to take the seed of a tournament and the pairwise probabilities of the teams playing, and simulate the tournament several thousand times to get the probability of each team becoming champion. 
 
-Note that one of the inputs to this simulation is the pairwise probabilities of every team against every other team. This simulation is NOT intended to calculate those probabilities. It is only intended to use them to predict the likely winners of the tournament. 
+Note that one of the inputs to this simulation is the pairwise probabilities of every team against every other team. This simulation is NOT intended to calculate those probabilities. It is only intended to use them to predict the likely winners of the tournament.
 
 # R Libraries
 
@@ -33,7 +33,7 @@ Method 1 takes the final 64 teams and simulates who will win. It outputs the exp
 
 ## Importing Data
 
-Data is from the Kaggle Competition directly, or from user submitted Kernels which have output the predicted pairwise probabilities.
+Data is from the Kaggle Competition directly, or from user-submitted Kernels which have output, the predicted pairwise probabilities.
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}
 ## Load the user generated probabilities from a Kernel
@@ -50,11 +50,12 @@ team_names <- read_csv("DataFiles/Teams.csv")
 
 ## Reorganizing Data for Simulation
 
-The data isn't provided in an easy to use lookup table, so in preparation for the simulation it is time to massage the data into the correct format. 
+The data isn't provided in an easy to use lookup table, so in preparation for the simulation, it is time to massage the data into the correct format. 
 
-Also, each simulation run will be fore a single year. For this report the year **2017** will be chosen.
+Also, each simulation run will before a single year. For this report the year **2017** will be chosen.
 
 It might be useful to create a shiny app later, so functions are being used to parse the data and run the simulation instead of running the code without functions.
+
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}
 #---
@@ -126,9 +127,10 @@ prob.mat <- generate_prob.mat(pairwise_probs, tourn_year)
 
 The next step in the simulation is to create a function that will predict the outcome of the tournament based on the pairwise probabilities of each match and random chance.
 
-The following function runs through the tournament one time. It uses a random number generator to generate value between 0 and 1. If that number is below the probability of team 1 winning, then team 1 wins and team 2 is removed from the list of teams, otherwise team 1 is removed from the list of teams. Then the code moves to team 3 and team 4, etc, etc.
+The following function runs through the tournament one time. It uses a random number generator to generate a value between 0 and 1. If that number is below the probability of team 1 winning, then team 1 wins and team 2 is removed from the list of teams, otherwise, team 1 is removed from the list of teams. Then the code moves to team 3 and team 4, etc, etc.
 
-Once the first round is calculated, the loop is started over until there is only 1 team left in bracket...the winner.
+Once the first round is calculated, the loop is started over until there is only 1 team left in the bracket...the winner.
+
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}
 #---
@@ -180,9 +182,10 @@ predict_champion <- function(matches.dt, prob.mat.dt) {
 
 ## Simulate the Tournament Many Times
 
-Getting one guess of who might be the winning team is pretty useless for predicting who will actually win the tournament. Next, it is necessary to run the simulation many times in order to get a distribution of teams that will win the championship, and their relative likelihood of winning compared to other teams.
+Getting one guess of who might be the winning team is pretty useless for predicting who will actually win the tournament. Next, it is necessary to run the simulation many times in order to get a distribution of teams that will win the championship and their relative likelihood of winning compared to other teams.
 
 To start, run the simulation 1000 times to review the output.
+
 
 ```{r message=FALSE, warning=FALSE, error=FALSE, results='hide'}
 # Create a data.table to hold the number of times a team has won
@@ -216,7 +219,7 @@ rm(n,start_time,pb)
 
 ## Reviewing the Results
 
-The simulation returned a table that listed the winning team for each run of the simulation. This is difficult to graph. Instead it is easier to graph a cumulative sum or a percentage. 
+The simulation returned a table that listed the winning team for each run of the simulation. This is difficult to graph. Instead, it is easier to graph a cumulative sum or a percentage.
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}
 tourn_results[,simulation := .I]
@@ -276,17 +279,18 @@ pct_wins %>%
   filter(TeamName == "South Carolina" | TeamName == "Gonzaga" | TeamName == "Oregon" | TeamName == "North Carolina")
 ```
 
-However, this is not necessarily a complete failure. The winning team ranked 5th and the runner up ranked 4th. 
+However, this is not necessarily a complete failure. The winning team ranked 5th and the runner-up ranked 4th. 
 
-So this method does show some promise in generating reasonable probabilities based on a very complex game full of many chances for upsets. 
+So this method does show some promise in generating reasonable probabilities based on a very complex game full of many chances for upsets.
 
 ## Method 1 next steps
 
-It would be pretty quick to re-write this function to return the max position that each team made it to instead of just tracking the champion. That would allow the building of a bracket which would be much more usefull. 
+It would be pretty quick to re-write this function to return the max position that each team made it to instead of just tracking the champion. That would allow the building of a bracket which would be much more useful. 
 
 # Method 2: Creating an actual Bracket using simulation
 
-This method is a little more intense, but the goal is to create a bracket. This is being done for the year 2017 so that we can compare the results to see how well it predicts. 
+This method is a little more intense, but the goal is to create a bracket. This is being done for the year 2017 so that we can compare the results to see how well it predicts.
+
 
 ```{r, fig.width=8.5, eval=FALSE}
 
@@ -556,11 +560,10 @@ save(bracketImage,file="BracketImage.Rdata")
 
 
 ## Reviewing Results of Method 2
+This method did generate a complete bracket displaying all 68 teams including the play in games. As expected, the higher seed teams advance because those teams have a higher probability of winning. 
 
-This method did generate a complete bracket with a few issues in the display of the first 64 teams. However, there is enough visibility here to review the results.
+Of the teams, Florida St. is the only lower seed to advance. However, if we enable upset bias then it favors the underdog almost in every case.  
 
-Of the teams that actually won the 2017 tournament, only 1 shows up in the top 8 teams, and only 2 show up in the top 16 teams. Moreover, the teams that were predicted by this simulation to make it to the top 4 only had 1 team actually make it to the top 8. 
-
-This indicates that the method is not very good at making a bracket. This may be because of the pairwise probabilities entered, because of chance, or because of some other issue with the method.
+This indicates that the method is not the best at predicting the outcome of the matches. This may be because of the pairwise probabilities entered, because of chance, or because of some other issue with the method.
 
 Instead, it is recommended to improve Method 1 to output how likely each team is to make it to each round, and then let the user make their own bracket from that prediction.
