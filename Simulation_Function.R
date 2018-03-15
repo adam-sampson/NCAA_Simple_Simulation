@@ -6,7 +6,7 @@ library(data.table)
 
     load(file =  "sub.Rdata",  envir = environment())
     # sub <- data.table(id = sub$ID, pred = sub$Pred)
-    save(sub, file = "sub.Rdata")
+    # save(sub, file = "sub.Rdata")
     # N = 100
     # year = 2017
     # upset_bias = 0
@@ -16,17 +16,19 @@ library(data.table)
 #   ____________________________________________________________________________
 #   Clean Predictions Data   (use only if needs to be split sub.Rdata is already split)
     
-    sub$id <-  strsplit(sub$id, "_")
-    sub$season <-    as.integer(sapply(sub$id, "[", 1))
-    sub$team_1 <-  as.integer(sapply(sub$id, "[", 2))
-    sub$team_2 <- as.integer(sapply(sub$id, "[", 3))
-    sub <- sub[,-1]
+    # sub$id <-  strsplit(sub$id, "_")
+    # sub$season <-    as.integer(sapply(sub$id, "[", 1))
+    # sub$team_1 <-  as.integer(sapply(sub$id, "[", 2))
+    # sub$team_2 <- as.integer(sapply(sub$id, "[", 3))
+    # sub <- sub[,-1]
 #   ____________________________________________________________________________
 #   Function to run simulation                                              ####
     simulation <- function (probs, N = 1000, year = 2017,  upset_bias = 0) 
     {
         
     load(file =  "all_slots.Rdata",  envir = environment())
+    all_slots <- all_slots[women != 1]  
+      
     probs <- probs[season == year, ]
     
     #Join slots to the predictions

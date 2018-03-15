@@ -1,0 +1,32 @@
+---
+title: "NCAA_Simulation_Report"
+author: "Adam Sampson, Jay Bektasevic, Jeff Hoffman"
+date: "March 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This simulation is intended to take the seed of a tournament and the pairwise probabilties of the teams playing, and simulate the tournament several thousand times to get the probability of each team becoming champion. 
+
+Note that one of the inputs to this simulation is the pairwise probabilities of every team against every other team. This simulation is NOT intended to calculate those probabilities. It is only intended to use them to predict the likely winners of the tournament. 
+
+# R Libraries
+```{r}
+library(data.table)
+```
+
+# Importing Cleaned Data
+
+Data is from the Kaggle Competition directly, or from user submitted Kernels which have output the predicted pairwise probabilities.
+
+(https://www.kaggleusercontent.com/kf/2593684/eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..jyN3-8es9ElgAMnGGr7ihQ.bG1HDZ36ahe4kJkt4GqX8-kCG8bm-OHWELhVzFalry3dQ56kSQtmoJcoYW4zPO18aJDFGQEUW9HqXwx14fvRHu79sy34Ek3vThY_wAsO7EdKsmAdOTlf_SpvU7Ahf5Lu1RcSpRy6Xb--MpzKIdFwkw.k2n5KyKDj2BI9T6HevzNJA/EloBenchmark.csv)
+
+
+
+```{r}
+load(file =  "sub.Rdata",  envir = environment())
+```
+
